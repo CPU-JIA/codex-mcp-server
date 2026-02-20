@@ -1,0 +1,57 @@
+{
+  "name": "@cpujia/codex-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for OpenAI Codex /v1/responses API integration with Claude Code",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "codex-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    ".env.example"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "codex",
+    "openai",
+    "gpt-5.3-codex",
+    "code-generation",
+    "claude-code",
+    "model-context-protocol",
+    "ai",
+    "code-assistant",
+    "typescript"
+  ],
+  "author": "CPU-JIA <jia202520@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CPU-JIA/codex-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CPU-JIA/codex-mcp-server/issues"
+  },
+  "homepage": "https://github.com/CPU-JIA/codex-mcp-server#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

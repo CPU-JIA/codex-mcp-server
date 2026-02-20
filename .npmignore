@@ -1,0 +1,11 @@
+src/
+.env
+.env.example
+*.log
+.DS_Store
+tsconfig.json
+node_modules/
+EXAMPLES.md
+QUICKSTART.md
+GPT-5.3-CODEX-CONFIG.md
+CLAUDE_CODE_CONFIG.md
