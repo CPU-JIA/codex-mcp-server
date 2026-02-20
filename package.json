@@ -1,6 +1,6 @@
 {
   "name": "@cpujia/codex-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP Server for OpenAI Codex /v1/responses API integration with Claude Code",
   "type": "module",
   "main": "dist/index.js",

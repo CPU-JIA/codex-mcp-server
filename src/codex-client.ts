@@ -7,14 +7,21 @@ interface CodexClientConfig {
   reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
 }
 
+interface CodexOutputText {
+  type: "output_text";
+  text: string;
+}
+
+interface CodexMessage {
+  type: "message";
+  role: string;
+  content: Array<CodexOutputText>;
+}
+
 interface CodexResponse {
   id: string;
-  type: string;
   status: string;
-  content: Array<{
-    type: string;
-    text?: string;
-  }>;
+  output: Array<CodexMessage>;
 }
 
 export class CodexClient {
@@ -69,7 +76,9 @@ export class CodexClient {
         throw new Error(`Unexpected response status: ${data.status}`);
       }
 
-      const textContent = data.content.find((c) => c.type === "output_text");
+      const textContent = data.output
+        ?.flatMap((item) => item.content ?? [])
+        .find((c) => c.type === "output_text");
       if (!textContent?.text) {
         throw new Error("No text content in response");
       }
