@@ -188,13 +188,43 @@ const ARCHITECT_SCHEMA: JsonSchemaFormat = {
   schema: {
     type: "object",
     properties: {
-      architecture: {
+      design: {
         type: "string",
         description:
-          "Complete system design in markdown format including: components, data flow, technologies, tradeoffs, implementation phases, and risks",
+          "System architecture overview with components and data flow",
+      },
+      rationale: {
+        type: "string",
+        description: "Why this design was chosen over alternatives",
+      },
+      technologies: {
+        type: "array",
+        items: { type: "string" },
+        description:
+          "Specific technologies and tools (e.g., PostgreSQL, Redis, Kubernetes)",
+      },
+      tradeoffs: {
+        type: "string",
+        description: "Key tradeoffs in markdown format",
+      },
+      implementation_phases: {
+        type: "array",
+        items: { type: "string" },
+        description: "Ordered implementation steps",
+      },
+      risks: {
+        type: "string",
+        description: "Major risks and mitigations in markdown format",
       },
     },
-    required: ["architecture"],
+    required: [
+      "design",
+      "rationale",
+      "technologies",
+      "tradeoffs",
+      "implementation_phases",
+      "risks",
+    ],
     additionalProperties: false,
   },
 };
@@ -433,7 +463,12 @@ interface ConvertResult {
 }
 
 interface ArchitectResult {
-  architecture: string;
+  design: string;
+  rationale: string;
+  technologies: string[];
+  tradeoffs: string;
+  implementation_phases: string[];
+  risks: string;
 }
 
 function formatGenerateOutput(parsed: GenerateResult): string {
@@ -474,7 +509,12 @@ function formatConvertOutput(parsed: ConvertResult): string {
 }
 
 function formatArchitectOutput(parsed: ArchitectResult): string {
-  return parsed.architecture;
+  const techs = parsed.technologies.map((t) => `- ${t}`).join("\n");
+  const phases = parsed.implementation_phases
+    .map((p, i) => `${i + 1}. ${p}`)
+    .join("\n");
+
+  return `## Design\n\n${parsed.design}\n\n## Rationale\n\n${parsed.rationale}\n\n## Technologies\n\n${techs}\n\n## Tradeoffs\n\n${parsed.tradeoffs}\n\n## Implementation Phases\n\n${phases}\n\n## Risks\n\n${parsed.risks}`;
 }
 
 // --- MCP Server ---
@@ -702,7 +742,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
 
         const parsed = safeJsonParse(result.text);
-        if (parsed && typeof parsed.architecture === "string") {
+        if (parsed && typeof parsed.design === "string") {
           return {
             content: [
               {
