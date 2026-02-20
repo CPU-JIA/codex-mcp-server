@@ -793,7 +793,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           instructions: INSTRUCTIONS.architect,
           input,
           jsonSchema: ARCHITECT_SCHEMA,
-          reasoningEffort: "xhigh",
+          reasoningEffort: "high",
         });
 
         const parsed = safeJsonParse(result.text);
