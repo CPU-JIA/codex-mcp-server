@@ -59,10 +59,14 @@ export class CodexClient {
       const effort = options.reasoningEffort ?? this.config.reasoningEffort;
       const maxTokens = options.maxTokens ?? this.config.maxTokens;
 
+      // 指令嵌入 user content，避免被 API 代理覆盖或过滤
+      const userContent = options.instructions
+        ? `[INSTRUCTIONS]\n${options.instructions}\n[/INSTRUCTIONS]\n\n${options.input}`
+        : options.input;
+
       const requestBody: Record<string, unknown> = {
         model: this.config.model,
-        instructions: options.instructions,
-        input: [{ role: "user", content: options.input }],
+        input: [{ role: "user", content: userContent }],
         max_output_tokens: maxTokens,
         store: false,
       };
