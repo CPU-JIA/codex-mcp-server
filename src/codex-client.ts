@@ -20,6 +20,7 @@ interface CodexRequestOptions {
   jsonSchema?: JsonSchemaFormat;
   reasoningEffort?: ReasoningEffort;
   maxTokens?: number;
+  previousResponseId?: string;
 }
 
 interface CodexOutputText {
@@ -44,6 +45,11 @@ interface CodexResponse {
   };
 }
 
+interface CodexRequestResult {
+  text: string;
+  responseId: string;
+}
+
 export class CodexClient {
   private config: CodexClientConfig;
 
@@ -51,7 +57,7 @@ export class CodexClient {
     this.config = config;
   }
 
-  async request(options: CodexRequestOptions): Promise<string> {
+  async request(options: CodexRequestOptions): Promise<CodexRequestResult> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
@@ -68,8 +74,12 @@ export class CodexClient {
         model: this.config.model,
         input: [{ role: "user", content: userContent }],
         max_output_tokens: maxTokens,
-        store: false,
+        store: true, // 启用存储以支持 previous_response_id
       };
+
+      if (options.previousResponseId) {
+        requestBody.previous_response_id = options.previousResponseId;
+      }
 
       if (effort) {
         requestBody.reasoning = { effort };
@@ -117,7 +127,10 @@ export class CodexClient {
         throw new Error("No text content in response");
       }
 
-      return textContent.text;
+      return {
+        text: textContent.text,
+        responseId: data.id,
+      };
     } catch (error) {
       clearTimeout(timeoutId);
 
@@ -136,6 +149,7 @@ export class CodexClient {
 export type {
   CodexClientConfig,
   CodexRequestOptions,
+  CodexRequestResult,
   JsonSchemaFormat,
   ReasoningEffort,
 };
