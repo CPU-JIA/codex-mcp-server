@@ -188,57 +188,13 @@ const ARCHITECT_SCHEMA: JsonSchemaFormat = {
   schema: {
     type: "object",
     properties: {
-      design: {
+      architecture: {
         type: "string",
-        description: "Proposed system design or architecture",
-      },
-      rationale: {
-        type: "string",
-        description: "Why this design was chosen",
-      },
-      tradeoffs: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            aspect: { type: "string", description: "What is being traded off" },
-            chosen: { type: "string", description: "What was chosen" },
-            alternative: { type: "string", description: "What was rejected" },
-            reason: { type: "string", description: "Why this tradeoff" },
-          },
-          required: ["aspect", "chosen", "alternative", "reason"],
-          additionalProperties: false,
-        },
-      },
-      implementation_steps: {
-        type: "array",
-        items: { type: "string" },
-        description: "High-level implementation roadmap",
-      },
-      risks: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            risk: { type: "string", description: "What could go wrong" },
-            severity: {
-              type: "string",
-              enum: ["critical", "high", "medium", "low"],
-            },
-            mitigation: { type: "string", description: "How to address it" },
-          },
-          required: ["risk", "severity", "mitigation"],
-          additionalProperties: false,
-        },
+        description:
+          "Complete system design in markdown format including: components, data flow, technologies, tradeoffs, implementation phases, and risks",
       },
     },
-    required: [
-      "design",
-      "rationale",
-      "tradeoffs",
-      "implementation_steps",
-      "risks",
-    ],
+    required: ["architecture"],
     additionalProperties: false,
   },
 };
@@ -394,20 +350,6 @@ const INSTRUCTIONS = {
     "4. **Risk-aware**: Identify what could go wrong and how to mitigate it",
     "5. **Implementable**: Design must be achievable by the team with stated constraints",
     "",
-    "# Tradeoff Analysis Framework",
-    "For each major decision, explicitly state:",
-    "- What you chose and why",
-    "- What you rejected and why",
-    "- What you're optimizing for (e.g., developer velocity, cost, reliability)",
-    "- What you're sacrificing (e.g., consistency, simplicity, performance)",
-    "",
-    "# Risk Assessment",
-    "Identify risks with:",
-    "- **critical**: System failure, data loss, security breach",
-    "- **high**: Significant downtime, performance degradation, cost overrun",
-    "- **medium**: Maintenance burden, technical debt, team friction",
-    "- **low**: Minor inconvenience, future refactoring needed",
-    "",
     "# Critical Instructions",
     "- Provide CONCRETE design: specific technologies, not 'use a database'",
     "- Break implementation into logical phases (MVP → iteration)",
@@ -419,9 +361,7 @@ const INSTRUCTIONS = {
     "Return a JSON object with these exact fields:",
     "- design: Detailed system architecture (components, data flow, technologies)",
     "- rationale: Why this design over alternatives (2-4 sentences)",
-    "- tradeoffs: Array of {aspect, chosen, alternative, reason}",
-    "- implementation_steps: Ordered list of phases/milestones",
-    "- risks: Array of {risk, severity, mitigation}",
+    "- key_decisions: Markdown-formatted section covering tradeoffs, implementation phases, and risks",
   ].join("\n"),
 };
 
@@ -492,25 +432,8 @@ interface ConvertResult {
   breaking_changes: string[];
 }
 
-interface Tradeoff {
-  aspect: string;
-  chosen: string;
-  alternative: string;
-  reason: string;
-}
-
-interface Risk {
-  risk: string;
-  severity: string;
-  mitigation: string;
-}
-
 interface ArchitectResult {
-  design: string;
-  rationale: string;
-  tradeoffs: Tradeoff[];
-  implementation_steps: string[];
-  risks: Risk[];
+  architecture: string;
 }
 
 function formatGenerateOutput(parsed: GenerateResult): string {
@@ -551,25 +474,7 @@ function formatConvertOutput(parsed: ConvertResult): string {
 }
 
 function formatArchitectOutput(parsed: ArchitectResult): string {
-  const tradeoffs = parsed.tradeoffs
-    .map(
-      (t) =>
-        `**${t.aspect}:** Chose "${t.chosen}" over "${t.alternative}"\n  Reason: ${t.reason}`,
-    )
-    .join("\n\n");
-
-  const steps = parsed.implementation_steps
-    .map((s, i) => `${i + 1}. ${s}`)
-    .join("\n");
-
-  const risks = parsed.risks
-    .map(
-      (r) =>
-        `- **[${r.severity.toUpperCase()}]** ${r.risk}\n  Mitigation: ${r.mitigation}`,
-    )
-    .join("\n\n");
-
-  return `## Design\n\n${parsed.design}\n\n## Rationale\n\n${parsed.rationale}\n\n## Tradeoffs\n\n${tradeoffs}\n\n## Implementation Steps\n\n${steps}\n\n## Risks\n\n${risks}`;
+  return parsed.architecture;
 }
 
 // --- MCP Server ---
@@ -797,7 +702,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
 
         const parsed = safeJsonParse(result.text);
-        if (parsed && typeof parsed.design === "string") {
+        if (parsed && typeof parsed.architecture === "string") {
           return {
             content: [
               {
