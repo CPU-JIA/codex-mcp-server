@@ -26,7 +26,7 @@ const codexClient = new CodexClient({
   baseURL: CODEX_API_BASE_URL,
   apiKey: CODEX_API_KEY,
   model: CODEX_MODEL,
-  timeout: parseInt(process.env.CODEX_TIMEOUT || "120000"),
+  timeout: parseInt(process.env.CODEX_TIMEOUT || "600000"),
   maxTokens: parseInt(process.env.CODEX_MAX_TOKENS || "16384"),
   reasoningEffort: CODEX_REASONING_EFFORT,
 });
