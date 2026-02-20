@@ -1,120 +1,138 @@
 export const tools = [
   {
     name: "codex_generate",
-    description:
-      "Generate code based on a natural language prompt. Use this for creating new code from scratch, implementing features, or writing functions.",
+    description: [
+      "Generate code using Codex deep reasoning. Use for complex tasks where a second expert perspective adds value.",
+      "",
+      "Returns structured JSON: { code, language, explanation, dependencies }",
+      "",
+      "When to use:",
+      "- Complex algorithms, data structures, state machines",
+      "- Performance-critical code requiring deep optimization",
+      "- System design implementations (interpreters, compilers, protocols)",
+      "- When you want a different model's approach to a hard problem",
+      "",
+      "Do NOT use for simple code generation — handle that natively.",
+    ].join("\n"),
     inputSchema: {
-      type: "object",
+      type: "object" as const,
       properties: {
         prompt: {
           type: "string",
-          description: "Natural language description of what code to generate",
+          description:
+            "What to generate. Be specific: requirements, constraints, expected behavior.",
         },
         language: {
           type: "string",
-          description: "Programming language (e.g., typescript, python, rust)",
+          description: "Target language (e.g., typescript, python, rust, go).",
         },
-        context: {
+        project_context: {
           type: "string",
           description:
-            "Additional context like existing code, dependencies, or requirements",
+            "Project info: tech stack, conventions, architecture. Pass CLAUDE.md or relevant standards.",
+        },
+        files: {
+          type: "string",
+          description:
+            "Related source files. Include types, interfaces, imports the generated code should reference.",
+        },
+        conversation_context: {
+          type: "string",
+          description:
+            "Recent conversation summary: what was discussed, decided, or attempted.",
         },
       },
       required: ["prompt"],
     },
   },
   {
-    name: "codex_edit",
-    description:
-      "Edit existing code based on instructions. Use this for modifying, updating, or improving existing code.",
+    name: "codex_review",
+    description: [
+      "Independent code review from a second AI. Analyzes security, performance, and best practices that the primary AI might miss.",
+      "",
+      "Returns structured JSON: { findings: [{ severity, category, location, issue, suggestion }], summary, score }",
+      "",
+      "When to use:",
+      "- Before committing security-sensitive code (auth, crypto, input validation)",
+      "- Performance-critical paths that need independent analysis",
+      "- When you want a second opinion on code quality",
+      "- PR review where an independent perspective matters",
+      "",
+      "Severity levels: critical, high, medium, low, info",
+      "Score range: 0-100 (90+ excellent, 70-89 good, 50-69 needs work, <50 concerning)",
+    ].join("\n"),
     inputSchema: {
-      type: "object",
+      type: "object" as const,
       properties: {
         code: {
           type: "string",
-          description: "The existing code to edit",
-        },
-        instruction: {
-          type: "string",
-          description: "What changes to make to the code",
+          description: "Code to review.",
         },
         language: {
           type: "string",
-          description: "Programming language of the code",
-        },
-      },
-      required: ["code", "instruction"],
-    },
-  },
-  {
-    name: "codex_explain",
-    description:
-      "Explain how code works. Use this for understanding complex code, algorithms, or logic.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        code: {
-          type: "string",
-          description: "The code to explain",
-        },
-        language: {
-          type: "string",
-          description: "Programming language of the code",
+          description: "Programming language of the code.",
         },
         focus: {
           type: "string",
+          enum: ["security", "performance", "best-practices", "all"],
+          description: "Review focus area. Default: all.",
+        },
+        project_context: {
+          type: "string",
           description:
-            "Specific aspect to focus on (e.g., 'performance', 'security', 'algorithm')",
+            "Project conventions, lint rules, architectural guidelines.",
+        },
+        conversation_context: {
+          type: "string",
+          description:
+            "Why this review is needed: what changed, what concerns exist.",
         },
       },
       required: ["code"],
     },
   },
   {
-    name: "codex_fix",
-    description:
-      "Fix buggy code based on error messages. Use this for debugging and fixing runtime or compilation errors.",
+    name: "codex_test",
+    description: [
+      "Generate comprehensive test suites with deep reasoning for edge case coverage.",
+      "",
+      "Returns structured JSON: { test_code, language, framework, test_cases: [{ name, description, type }], coverage_notes }",
+      "",
+      "When to use:",
+      "- Complex business logic needing thorough edge case coverage",
+      "- Functions with many branches, error paths, or boundary conditions",
+      "- When test quality directly impacts reliability",
+      "- Integration tests requiring careful mock setup",
+      "",
+      "Test case types: unit, integration, edge-case, error-handling",
+    ].join("\n"),
     inputSchema: {
-      type: "object",
+      type: "object" as const,
       properties: {
         code: {
           type: "string",
-          description: "The code with the bug",
-        },
-        error: {
-          type: "string",
-          description: "The error message or description of the bug",
+          description: "Code to generate tests for.",
         },
         language: {
           type: "string",
-          description: "Programming language of the code",
+          description: "Programming language (e.g., typescript, python).",
         },
-      },
-      required: ["code", "error"],
-    },
-  },
-  {
-    name: "codex_refactor",
-    description:
-      "Refactor code to improve quality, readability, or performance. Use this for code cleanup and optimization.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        code: {
+        framework: {
           type: "string",
-          description: "The code to refactor",
+          description: "Test framework (e.g., jest, vitest, pytest, go test).",
         },
-        goal: {
+        project_context: {
           type: "string",
           description:
-            "Refactoring goal (e.g., 'improve readability', 'optimize performance', 'reduce complexity')",
+            "Project test conventions: existing patterns, mock strategies, test directory structure.",
         },
-        language: {
+        conversation_context: {
           type: "string",
-          description: "Programming language of the code",
+          description:
+            "Context about the code: known issues, requirements, what needs coverage.",
         },
       },
-      required: ["code", "goal"],
+      required: ["code"],
     },
   },
 ];

@@ -1,10 +1,25 @@
+type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+
 interface CodexClientConfig {
   baseURL: string;
   apiKey: string;
   model: string;
   timeout: number;
   maxTokens: number;
-  reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+  reasoningEffort?: ReasoningEffort;
+}
+
+interface JsonSchemaFormat {
+  name: string;
+  schema: Record<string, unknown>;
+}
+
+interface CodexRequestOptions {
+  instructions: string;
+  input: string;
+  jsonSchema?: JsonSchemaFormat;
+  reasoningEffort?: ReasoningEffort;
+  maxTokens?: number;
 }
 
 interface CodexOutputText {
@@ -12,7 +27,7 @@ interface CodexOutputText {
   text: string;
 }
 
-interface CodexMessage {
+interface CodexOutputMessage {
   type: "message";
   role: string;
   content: Array<CodexOutputText>;
@@ -21,7 +36,12 @@ interface CodexMessage {
 interface CodexResponse {
   id: string;
   status: string;
-  output: Array<CodexMessage>;
+  output: Array<CodexOutputMessage>;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+  };
 }
 
 export class CodexClient {
@@ -31,25 +51,34 @@ export class CodexClient {
     this.config = config;
   }
 
-  async generate(input: string): Promise<string> {
+  async request(options: CodexRequestOptions): Promise<string> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
     try {
-      const requestBody: any = {
+      const effort = options.reasoningEffort ?? this.config.reasoningEffort;
+      const maxTokens = options.maxTokens ?? this.config.maxTokens;
+
+      const requestBody: Record<string, unknown> = {
         model: this.config.model,
-        input: [
-          {
-            role: "user",
-            content: input,
-          },
-        ],
-        max_output_tokens: this.config.maxTokens,
+        instructions: options.instructions,
+        input: [{ role: "user", content: options.input }],
+        max_output_tokens: maxTokens,
+        store: false,
       };
 
-      if (this.config.reasoningEffort) {
-        requestBody.reasoning = {
-          effort: this.config.reasoningEffort,
+      if (effort) {
+        requestBody.reasoning = { effort };
+      }
+
+      if (options.jsonSchema) {
+        requestBody.text = {
+          format: {
+            type: "json_schema",
+            name: options.jsonSchema.name,
+            strict: true,
+            schema: options.jsonSchema.schema,
+          },
         };
       }
 
@@ -79,6 +108,7 @@ export class CodexClient {
       const textContent = data.output
         ?.flatMap((item) => item.content ?? [])
         .find((c) => c.type === "output_text");
+
       if (!textContent?.text) {
         throw new Error("No text content in response");
       }
@@ -97,100 +127,11 @@ export class CodexClient {
       throw new Error(`Unknown error: ${String(error)}`);
     }
   }
-
-  async generateStream(
-    input: string,
-    onChunk: (text: string) => void,
-  ): Promise<void> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
-
-    try {
-      const requestBody: any = {
-        model: this.config.model,
-        input: [
-          {
-            role: "user",
-            content: input,
-          },
-        ],
-        max_output_tokens: this.config.maxTokens,
-        stream: true,
-      };
-
-      if (this.config.reasoningEffort) {
-        requestBody.reasoning = {
-          effort: this.config.reasoningEffort,
-        };
-      }
-
-      const response = await fetch(`${this.config.baseURL}/responses`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.config.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Codex API error (${response.status}): ${errorText}`);
-      }
-
-      if (!response.body) {
-        throw new Error("No response body");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.trim() || line.startsWith(":")) continue;
-
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-
-            if (data === "[DONE]") {
-              return;
-            }
-
-            try {
-              const parsed = JSON.parse(data);
-
-              if (parsed.type === "response.output_text.delta") {
-                onChunk(parsed.delta || "");
-              }
-            } catch (e) {
-              console.error("Failed to parse SSE data:", e);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      clearTimeout(timeoutId);
-
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          throw new Error(`Request timeout after ${this.config.timeout}ms`);
-        }
-        throw error;
-      }
-
-      throw new Error(`Unknown error: ${String(error)}`);
-    }
-  }
 }
+
+export type {
+  CodexClientConfig,
+  CodexRequestOptions,
+  JsonSchemaFormat,
+  ReasoningEffort,
+};
